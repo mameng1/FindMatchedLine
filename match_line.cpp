@@ -264,6 +264,7 @@ std::vector<Eigen::Vector2i> MatchingLine::computeScoreMatrix(std::vector<L3DPP:
     views[0]->resetImage();
     views[1]->resetImage();
 
+    std::vector<int> l_usedlines(views[0]->getLineSize(),0),r_usedlines(views[1]->getLineSize(),0);
     for(size_t i=0;i<corre_idx.size();i++)
     {
         int left_idx=corre_idx[i][0];
@@ -272,7 +273,8 @@ std::vector<Eigen::Vector2i> MatchingLine::computeScoreMatrix(std::vector<L3DPP:
         Eigen::Vector4f r_line=views[1]->getLineSegment2D(right_idx);
         flos<<i<<" "<<l_line[0]<<" "<<l_line[1]<<" "<<l_line[2]<<" "<<l_line[3]<<std::endl;
         fros<<i<<" "<<r_line[0]<<" "<<r_line[1]<<" "<<r_line[2]<<" "<<r_line[3]<<std::endl;
-
+        l_usedlines[left_idx]=1;
+        r_usedlines[right_idx]=1;
         cv::Scalar color=randomColor(rng);
         //views[1]->drawCloud(inliers_p,color);
         views[0]->drawSingleLine(left_idx,color);
@@ -290,6 +292,8 @@ std::vector<Eigen::Vector2i> MatchingLine::computeScoreMatrix(std::vector<L3DPP:
             cv::Scalar color=randomColor(rng);
             std::vector<Eigen::Vector3d> inliers_p;
             Eigen::Vector4f line_c=views[0]->getLineSegment2D(i);
+            l_usedlines[i]=1;
+
             flos<<unm_label<<" "<<line_c[0]<<" "<<line_c[1]<<" "<<line_c[2]<<" "<<line_c[3]<<std::endl;
             unm_label++;
             left_us++;
@@ -312,6 +316,7 @@ std::vector<Eigen::Vector2i> MatchingLine::computeScoreMatrix(std::vector<L3DPP:
             cv::Scalar color=randomColor(rng);
             std::vector<Eigen::Vector3d> inliers_p;
             Eigen::Vector4f line_c=views[1]->getLineSegment2D(i);
+            r_usedlines[i]=1;
             fros<<unm_label<<" "<<line_c[0]<<" "<<line_c[1]<<" "<<line_c[2]<<" "<<line_c[3]<<std::endl;
             unm_label++;
             right_us++;
@@ -327,6 +332,25 @@ std::vector<Eigen::Vector2i> MatchingLine::computeScoreMatrix(std::vector<L3DPP:
              views[1]->drawSingleLine(i,color);
         }
     }
+    for(size_t i=0;i<views[0]->getLineSize();i++)
+    {
+        if(l_usedlines[i]==0)
+        {
+            Eigen::Vector4f line_c=views[0]->getLineSegment2D(i);
+
+            flos<<-1<<" "<<line_c[0]<<" "<<line_c[1]<<" "<<line_c[2]<<" "<<line_c[3]<<std::endl;
+        }
+     }
+    for(size_t i=0;i<views[1]->getLineSize();i++)
+    {
+        if(r_usedlines[i]==0)
+        {
+            Eigen::Vector4f line_c=views[1]->getLineSegment2D(i);
+            fros<<-1<<" "<<line_c[0]<<" "<<line_c[1]<<" "<<line_c[2]<<" "<<line_c[3]<<std::endl;
+        }
+    }
+    flos.close();
+    fros.close();
     mergeImage(views[0]->getImage(),views[1]->getImage(),umatchimg_path);
 
     std::cout<<"msize:"<<corre_idx.size()<<" "<<"lms:"<<left_us<<" "<<
